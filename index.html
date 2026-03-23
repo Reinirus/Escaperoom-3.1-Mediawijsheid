@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediaWijsheid Escaperoom</title>
+  <style>
+    :root {
+      --bg1: #0b1020;
+      --bg2: #111a36;
+      --panel: rgba(13, 22, 48, 0.88);
+      --panel2: rgba(24, 36, 74, 0.9);
+      --line: rgba(255,255,255,0.12);
+      --text: #f3f7ff;
+      --muted: #aab7d9;
+      --accent: #4ff4c8;
+      --accent2: #5aa8ff;
+      --warn: #ffcf5a;
+      --danger: #ff6b81;
+      --good: #6dff93;
+      --shadow: 0 18px 50px rgba(0,0,0,.35);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; color: var(--text); }
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(90,168,255,0.18), transparent 18%),
+        radial-gradient(circle at 80% 10%, rgba(79,244,200,0.15), transparent 20%),
+        radial-gradient(circle at 50% 80%, rgba(255,207,90,0.12), transparent 25%),
+        linear-gradient(160deg, var(--bg1), var(--bg2));
+      overflow-x: hidden;
+    }
+
+    .floating-icons, .confetti-layer, .balloon-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .icon-float, .confetti, .balloon {
+      position: absolute;
+      opacity: .14;
+      animation: drift linear infinite;
+      user-select: none;
+    }
+
+    .icon-float { font-size: 2rem; }
+    .confetti { width: 10px; height: 18px; opacity: 0; }
+    .balloon {
+      font-size: 2rem;
+      opacity: 0;
+      animation-name: rise;
+      filter: drop-shadow(0 8px 12px rgba(0,0,0,0.25));
+    }
+
+    @keyframes drift {
+      from { transform: translateY(110vh) rotate(0deg); }
+      to { transform: translateY(-20vh) rotate(360deg); }
+    }
+
+    @keyframes fall {
+      from { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+      to { transform: translateY(110vh) rotate(720deg); opacity: 1; }
+    }
+
+    @keyframes rise {
+      from { transform: translateY(110vh) scale(.8); opacity: .92; }
+      to { transform: translateY(-20vh) scale(1.1); opacity: .98; }
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.3fr .9fr;
+      gap: 18px;
+      align-items: stretch;
+      margin-top: 8px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    .hero-left { padding: 26px; }
+    .hero-right { padding: 20px; display: flex; flex-direction: column; justify-content: center; }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      line-height: 1.02;
+      margin-bottom: 14px;
+    }
+    h2 { font-size: 1.45rem; margin-bottom: 10px; }
+    h3 { font-size: 1.1rem; margin-bottom: 10px; }
+    .sub { color: var(--muted); font-size: 1.05rem; line-height: 1.55; }
+
+    .badges { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 14px; }
+    .badge {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.08);
+      font-size: .95rem;
+    }
+
+    .start-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .field, .select, .btn, .answer-btn, .key-btn, .mini-btn {
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.13);
+      font-size: 1rem;
+    }
+
+    .field, .select {
+      width: 100%;
+      background: rgba(255,255,255,0.08);
+      color: white;
+      padding: 14px 14px;
+      outline: none;
+    }
+
+    .btn, .mini-btn {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #07101f;
+      font-weight: 800;
+      padding: 14px 18px;
+      cursor: pointer;
+      border: none;
+      transition: .2s ease;
+    }
+    .btn:hover, .mini-btn:hover, .answer-btn:hover, .key-btn:hover { transform: translateY(-1px) scale(1.01); }
+    .btn:active, .mini-btn:active, .answer-btn:active, .key-btn:active { transform: translateY(0) scale(.99); }
+    .btn.secondary, .mini-btn.secondary {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.13);
+    }
+
+    .hero-visual {
+      border-radius: 20px;
+      padding: 18px;
+      min-height: 280px;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.02)),
+        radial-gradient(circle at 70% 20%, rgba(79,244,200,.18), transparent 26%),
+        radial-gradient(circle at 30% 75%, rgba(90,168,255,.2), transparent 24%);
+      border: 1px solid rgba(255,255,255,0.09);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-visual .emoji-cloud {
+      font-size: clamp(2rem, 7vw, 4rem);
+      letter-spacing: 6px;
+      line-height: 1.6;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.25));
+      opacity: .95;
+    }
+
+    .safe-image {
+      width: 100%;
+      display: block;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 16px 36px rgba(0,0,0,0.25);
+      object-fit: cover;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .safe-image.hero {
+      min-height: 210px;
+      max-height: 280px;
+      margin-top: 10px;
+    }
+
+    .safe-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .safe-image.celebration {
+      max-height: 220px;
+      margin: 14px auto 6px;
+    }
+
+    .safe-image.reward {
+      max-height: 240px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 680px) {
+      .safe-row { grid-template-columns: 1fr; }
+    }
+
+    .topbar {
+      margin: 18px 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .stat { padding: 16px 16px; }
+    .stat strong { display: block; font-size: 1.3rem; margin-top: 4px; }
+    .muted { color: var(--muted); }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.45fr .75fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .room-card { padding: 22px; position: relative; overflow: hidden; }
+    .room-title { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+    .room-icon { font-size: 2rem; }
+    .question-panel {
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.045);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .question-type {
+      display: inline-block;
+      margin-bottom: 10px;
+      font-size: .85rem;
+      color: #07101f;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--warn), #ffd875);
+      font-weight: 700;
+    }
+
+    .question-text {
+      font-size: 1.25rem;
+      line-height: 1.45;
+      margin-bottom: 16px;
+    }
+
+    .answers { display: grid; gap: 12px; }
+    .answer-btn, .key-btn {
+      text-align: left;
+      width: 100%;
+      padding: 16px 16px;
+      background: rgba(255,255,255,0.07);
+      color: white;
+      cursor: pointer;
+      transition: .2s ease;
+    }
+    .answer-btn.correct, .key-btn.correct {
+      background: rgba(109,255,147,0.14);
+      border-color: rgba(109,255,147,0.5);
+    }
+    .answer-btn.wrong, .key-btn.wrong {
+      background: rgba(255,107,129,0.12);
+      border-color: rgba(255,107,129,0.45);
+    }
+
+    .math-box, .final-box, .cert-box, .celebration-box {
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.09);
+    }
+
+    .math-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      margin-top: 12px;
+    }
+    .math-input {
+      width: 100%;
+      padding: 14px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.08);
+      color: white;
+      font-size: 1rem;
+    }
+
+    .side-card { padding: 18px; }
+    .progress-wrap {
+      height: 16px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.07);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      margin: 10px 0 16px;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width .35s ease;
+    }
+
+    .digits {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .digit-slot {
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.06);
+      border: 1px dashed rgba(255,255,255,0.15);
+      font-size: 1.6rem;
+      font-weight: 900;
+    }
+    .digit-slot.filled {
+      background: rgba(79,244,200,0.14);
+      border-style: solid;
+      border-color: rgba(79,244,200,0.45);
+      box-shadow: inset 0 0 18px rgba(79,244,200,.12);
+    }
+
+    .feed {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .feed-item {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.055);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .feed-item.good { color: #dffff1; border-color: rgba(109,255,147,0.28); }
+    .feed-item.bad { color: #ffe1e6; border-color: rgba(255,107,129,0.28); }
+
+    .room-map {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .room-node {
+      min-height: 78px;
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: rgba(255,255,255,0.055);
+      border: 1px solid rgba(255,255,255,0.08);
+      text-align: center;
+      padding: 8px;
+      font-size: .92rem;
+    }
+    .room-node.active { border-color: rgba(90,168,255,.45); box-shadow: inset 0 0 18px rgba(90,168,255,.12); }
+    .room-node.done { border-color: rgba(109,255,147,.45); background: rgba(109,255,147,.12); }
+
+    .lock-celebration {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      background: rgba(6, 10, 18, 0.46);
+      backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+    .lock-celebration.show { display: flex; animation: popIn .2s ease; }
+
+    .celebration-card {
+      max-width: 640px;
+      width: 100%;
+      padding: 28px;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(17,27,59,.98), rgba(12,20,42,.98));
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 30px 80px rgba(0,0,0,.5);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .celebration-lock {
+      font-size: 4rem;
+      margin-bottom: 8px;
+      animation: bounce 1s ease infinite;
+    }
+    .big-digit {
+      display: inline-flex;
+      min-width: 86px;
+      min-height: 86px;
+      border-radius: 22px;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, var(--warn), #ffea97);
+      color: #0a1222;
+      font-size: 3rem;
+      font-weight: 900;
+      margin: 10px auto 16px;
+      box-shadow: 0 14px 30px rgba(255,207,90,.25);
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    @keyframes popIn {
+      from { transform: scale(.96); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .code-formula {
+      font-size: 1.15rem;
+      line-height: 1.6;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 16px;
+      margin: 12px 0;
+    }
+
+    .code-display {
+      display: inline-flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 8px;
+    }
+    .code-chip {
+      min-width: 54px;
+      min-height: 54px;
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 1.6rem;
+      font-weight: 900;
+    }
+
+    .certificate {
+      background: linear-gradient(135deg, rgba(255,255,255,.95), rgba(239,247,255,.96));
+      color: #12203d;
+      border-radius: 24px;
+      padding: 30px;
+      box-shadow: 0 24px 60px rgba(0,0,0,.25);
+      border: 8px solid #d9ebff;
+    }
+    .certificate h2 {
+      font-size: 2rem;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .certificate .cert-sub {
+      text-align: center;
+      color: #3d557f;
+      margin-bottom: 20px;
+    }
+    .cert-name {
+      font-size: 2rem;
+      font-weight: 900;
+      text-align: center;
+      margin: 12px 0;
+      color: #102247;
+    }
+    .cert-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 18px 0;
+    }
+    .cert-item {
+      padding: 14px;
+      border-radius: 16px;
+      background: #eef5ff;
+      border: 1px solid #d5e6ff;
+    }
+    .cert-footer {
+      margin-top: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: end;
+      flex-wrap: wrap;
+    }
+    .stamp {
+      padding: 14px 18px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #35d39c, #57a7ff);
+      color: white;
+      font-weight: 800;
+      box-shadow: 0 12px 24px rgba(0,0,0,.15);
+    }
+
+    .hidden { display: none !important; }
+    .small { font-size: .95rem; }
+
+    @media (max-width: 960px) {
+      .hero, .main-grid { grid-template-columns: 1fr; }
+      .topbar { grid-template-columns: 1fr 1fr; }
+      .digits { grid-template-columns: repeat(5, 1fr); }
+    }
+
+    @media (max-width: 680px) {
+      .app { padding: 14px 10px 70px; }
+      .hero-left, .hero-right, .room-card, .side-card { padding: 16px; }
+      .start-grid, .cert-grid, .topbar { grid-template-columns: 1fr; }
+      .room-map { grid-template-columns: repeat(2, 1fr); }
+      .digits { grid-template-columns: repeat(5, 1fr); }
+      .digit-slot { min-height: 48px; font-size: 1.25rem; }
+      .math-row { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      body * { visibility: hidden !important; }
+      #certificatePrint, #certificatePrint * { visibility: visible !important; }
+      #certificatePrint {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="floating-icons" id="floatingIcons"></div>
+  <div class="confetti-layer" id="confettiLayer"></div>
+  <div class="balloon-layer" id="balloonLayer"></div>
+
+  <div class="lock-celebration" id="celebrationModal">
+    <div class="celebration-card">
+      <div class="celebration-lock">🔓</div>
+      <img class="safe-image celebration" src="Afbeelding2%20kluis.png" alt="Kluis als beloning na een goed antwoord" />
+      <h2>Goed gedaan, we gaan een kluiscode verder</h2>
+      <p id="celebrationText" class="sub" style="margin-bottom: 6px;">Je hebt de vraag en de som goed beantwoord.</p>
+      <div class="big-digit" id="celebrationDigit">7</div>
+      <p class="sub">Dit cijfer bewaar je voor de eindsom. Elke kamer geeft één nieuw getal.</p>
+      <button class="btn" id="closeCelebrationBtn">Verder naar de volgende kamer</button>
+    </div>
+  </div>
+
+  <div class="app">
+    <section class="hero">
+      <div class="hero-left card">
+        <div class="question-type">ESCAPEROOM • MEDIAWIJSHEID • PRAKTIJKONDERWIJS</div>
+        <h1>De Digitale Kluis</h1>
+        <p class="sub">
+          Werk door <strong>20 mediawijsheid-uitdagingen</strong>. Na elk goed antwoord krijg je een
+          <strong>rekensom in verhaalvorm</strong>. Los je die ook goed op, dan springt een slot open,
+          krijg je een <strong>nieuw cijfer</strong> en ga je naar de volgende kamer.
+        </p>
+        <div class="badges">
+          <div class="badge">📱 Nepnieuws</div>
+          <div class="badge">💬 Online gedrag</div>
+          <div class="badge">🔐 Privacy</div>
+          <div class="badge">🎥 AI & beelden</div>
+          <div class="badge">🧠 Slim kiezen</div>
+        </div>
+        <div class="start-grid">
+          <input id="playerName" class="field" type="text" placeholder="Jouw naam" maxlength="40" />
+          <input id="playerClass" class="field" type="text" placeholder="Klas of groep" maxlength="30" />
+          <button class="btn" id="startBtn">Start de escaperoom</button>
+          <button class="btn secondary" id="resetBtn">Opnieuw beginnen</button>
+        </div>
+      </div>
+      <div class="hero-right card">
+        <div class="hero-visual">
+          <h2 style="margin-bottom: 12px;">Wat zit erin?</h2>
+          <img class="safe-image hero" src="Afbeelding1%20kluis.png" alt="Gesloten kluisdeur" />
+          <p class="sub" style="margin-top: 14px;">
+            Spectaculaire feedback, geluidjes, slingers, kluiscodes en een certificaat met naam, score en tijd.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="topbar">
+      <div class="stat card"><span class="muted">Kamer</span><strong id="roomStat">0 / 20</strong></div>
+      <div class="stat card"><span class="muted">Score</span><strong id="scoreStat">0</strong></div>
+      <div class="stat card"><span class="muted">Tijd</span><strong id="timeStat">00:00</strong></div>
+      <div class="stat card"><span class="muted">Status</span><strong id="statusStat">Klaar voor start</strong></div>
+    </section>
+
+    <section class="main-grid">
+      <div class="room-card card">
+        <div class="room-title">
+          <div class="room-icon" id="roomIcon">🚪</div>
+          <div>
+            <h2 id="roomTitle">Welkom in de escaperoom</h2>
+            <p id="roomIntro" class="muted">Vul je naam in en start. Daarna ga je kamer voor kamer verder.</p>
+          </div>
+        </div>
+
+        <div id="questionSection" class="question-panel hidden">
+          <div class="question-type" id="questionType">Meerkeuze</div>
+          <div class="question-text" id="questionText"></div>
+          <div class="answers" id="answersBox"></div>
+        </div>
+
+        <div id="mathSection" class="math-box hidden">
+          <h3>Rekenslot</h3>
+          <p id="mathText" class="sub"></p>
+          <div class="math-row">
+            <input id="mathInput" class="math-input" type="number" placeholder="Vul je antwoord in" />
+            <button class="btn" id="checkMathBtn">Open het slot</button>
+          </div>
+          <div id="mathFeedback" class="feed" style="margin-top: 12px;"></div>
+        </div>
+
+        <div id="finalSection" class="final-box hidden">
+          <h2>Laatste toets van de kluis</h2>
+          <p class="sub">Je hebt alle kamers gehaald. Gebruik de vijf cijfers in de juiste volgorde en maak nu de eindsom.</p>
+          <div class="code-display" id="finalDigitsView"></div>
+          <div class="code-formula" id="formulaBox"></div>
+          <div class="math-row">
+            <input id="finalInput" class="math-input" type="number" placeholder="Uitkomst van de eindsom" />
+            <button class="btn" id="checkFinalBtn">Controleer de eindsom</button>
+          </div>
+          <div id="finalFeedback" class="feed"></div>
+        </div>
+
+        <div id="codeRevealSection" class="celebration-box hidden">
+          <h2>Goed zo, je hebt de som goed beantwoord. Je hebt de kluis gekraakt!</h2>
+          <p class="sub">Jouw persoonlijke kluiscode is nu zichtbaar. Deze code is voor iedere speler anders.</p>
+          <div class="code-display" id="codeRevealBox"></div>
+          <div class="safe-row">
+            <img class="safe-image reward" src="Afbeelding3%20open%20kluis.png" alt="Open kluis als eindscherm" />
+            <img class="safe-image reward" src="Afbeelding4%20de%20kluis%20gekraakt.png" alt="Open kluis met beloning" />
+          </div>
+        </div>
+
+        <div id="certificateSection" class="cert-box hidden">
+          <h2>Beloning</h2>
+          <p class="sub">Je hebt de volledige escaperoom afgerond. Download of print je certificaat.</p>
+          <div id="certificatePrint" class="certificate">
+            <h2>Certificaat MediaWijsheid Escaperoom</h2>
+            <div class="cert-sub">Bewijs van deelname en afronding</div>
+            <p style="text-align:center;">Dit certificaat is uitgereikt aan</p>
+            <div class="cert-name" id="certName">Naam leerling</div>
+            <div class="cert-grid">
+              <div class="cert-item"><strong>Klas / groep</strong><br /><span id="certClass">-</span></div>
+              <div class="cert-item"><strong>Score</strong><br /><span id="certScore">-</span></div>
+              <div class="cert-item"><strong>Tijd</strong><br /><span id="certTime">-</span></div>
+              <div class="cert-item"><strong>Persoonlijke kluiscode</strong><br /><span id="certCode">-</span></div>
+            </div>
+            <p>
+              Deze leerling heeft de uitdagende MediaWijsheid Escaperoom afgerond,
+              vragen beantwoord, rekensloten geopend en de digitale kluis succesvol gekraakt.
+            </p>
+            <div class="cert-footer">
+              <div>
+                <strong>Datum</strong><br /><span id="certDate"></span>
+              </div>
+              <div class="stamp">GEHAALD ✅</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top: 16px;">
+            <button class="btn" id="printCertBtn">Print / bewaar als PDF</button>
+            <button class="btn secondary" id="playAgainBtn">Speel opnieuw</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="side-card card">
+        <h3>Voortgang</h3>
+        <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+        <div class="small muted">Je moet kamer voor kamer werken. Na een goede vraag volgt steeds een rekenslot.</div>
+
+        <h3 style="margin-top: 20px;">Verzamelde cijfers</h3>
+        <div class="digits" id="digitSlots">
+          <div class="digit-slot">?</div>
+          <div class="digit-slot">?</div>
+          <div class="digit-slot">?</div>
+          <div class="digit-slot">?</div>
+          <div class="digit-slot">?</div>
+        </div>
+
+        <h3 style="margin-top: 20px;">Kamers</h3>
+        <div class="room-map" id="roomMap"></div>
+
+        <h3 style="margin-top: 20px;">Spelbericht</h3>
+        <div class="feed" id="messageFeed">
+          <div class="feed-item">Vul je naam in en start de escaperoom.</div>
+        </div>
+      </aside>
+    </section>
+  </div>
+
+  <script>
+    const QUESTIONS = [
+      {
+        room: "Kamer 1 • Het eerste scherm",
+        icon: "📱",
+        type: "Meerkeuze",
+        prompt: "Je krijgt een bericht: ‘Stuur snel je wachtwoord, anders wordt je account geblokkeerd.’ Wat doe je het best?",
+        answers: [
+          { key: "a", text: "Meteen je wachtwoord sturen, anders ben je te laat.", correct: false },
+          { key: "b", text: "Het bericht negeren, controleren wie het stuurde en niets invullen.", correct: true },
+          { key: "c", text: "Het wachtwoord naar een vriend sturen voor controle.", correct: false },
+          { key: "d", text: "De link openen op een andere telefoon.", correct: false }
+        ],
+        math: {
+          text: "Een nepbericht wordt door 3 leerlingen elk 4 keer doorgestuurd. Daarna sturen 2 andere leerlingen het nog 6 keer door. Hoe vaak is het bericht in totaal doorgestuurd?",
+          answer: 24
+        }
+      },
+      {
+        room: "Kamer 2 • Nep of echt?",
+        icon: "📰",
+        type: "Meerkeuze",
+        prompt: "Een filmpje laat iets schokkends zien. Welke stap is slim voordat je het deelt?",
+        answers: [
+          { key: "a", text: "Kijken of andere betrouwbare bronnen hetzelfde melden.", correct: true },
+          { key: "b", text: "Alleen letten op hoeveel likes het filmpje heeft.", correct: false },
+          { key: "c", text: "Het meteen posten met ‘ik weet niet of dit klopt’. ", correct: false },
+          { key: "d", text: "Vragen of het filmpje grappig genoeg is.", correct: false }
+        ],
+        math: {
+          text: "Een groep ziet 5 dagen lang elke dag 3 nepnieuwsberichten. Op de laatste dag vinden zij nog 15 oude nepberichten terug. Hoeveel nepberichten tellen zij samen?",
+          answer: 30
+        }
+      },
+      {
+        room: "Kamer 3 • Online gedrag",
+        icon: "💬",
+        type: "Meerkeuze",
+        prompt: "Iemand wordt in een groepsapp uitgelachen. Wat is de beste reactie?",
+        answers: [
+          { key: "a", text: "Zelf ook iets grappigs sturen zodat je erbij hoort.", correct: false },
+          { key: "b", text: "De app verlaten zonder iets te doen.", correct: false },
+          { key: "c", text: "Stop zeggen, bewijs bewaren en hulp vragen aan een volwassene of docent.", correct: true },
+          { key: "d", text: "Een screenshot maken en die overal doorsturen.", correct: false }
+        ],
+        math: {
+          text: "In een week verschijnen er 7 dagen lang per dag 8 gemene reacties onder een video. Hoeveel gemene reacties staan er na die week onder de video?",
+          answer: 56
+        }
+      },
+      {
+        room: "Kamer 4 • Sterk wachtwoord",
+        icon: "🔐",
+        type: "Meerkeuze",
+        prompt: "Welk wachtwoord is het sterkst?",
+        answers: [
+          { key: "a", text: "Welkom123", correct: false },
+          { key: "b", text: "12345678", correct: false },
+          { key: "c", text: "Ajax2026", correct: false },
+          { key: "d", text: "R7!mZ9#qL2", correct: true }
+        ],
+        math: {
+          text: "Een school maakt 9 veilige accounts aan. Bij elk account horen 4 controlepunten voor veiligheid. Hoeveel controlepunten moeten samen worden nagelopen?",
+          answer: 36
+        }
+      },
+      {
+        room: "Kamer 5 • Delen of niet delen",
+        icon: "📸",
+        type: "Meerkeuze",
+        prompt: "Je maakt een foto van een klasgenoot. Wanneer plaats je die online?",
+        answers: [
+          { key: "a", text: "Als het een grappige foto is.", correct: false },
+          { key: "b", text: "Alleen als die persoon duidelijk toestemming geeft.", correct: true },
+          { key: "c", text: "Als je zelf ook op de foto staat.", correct: false },
+          { key: "d", text: "Als het buiten schooltijd is.", correct: false }
+        ],
+        math: {
+          text: "Een leerling wil 10 foto's delen. Van 4 foto's mag het niet. Hoeveel foto's blijven er over die wel gedeeld mogen worden?",
+          answer: 6
+        }
+      },
+      {
+        room: "Kamer 6 • Slim reageren",
+        icon: "🧠",
+        type: "Meerkeuze",
+        prompt: "Iemand typt online: ‘Jij bent echt dom.’ Wat is het slimst?",
+        answers: [
+          { key: "a", text: "Meteen harder terugschelden.", correct: false },
+          { key: "b", text: "Bewijs bewaren, niet terug vechten en hulp vragen als het doorgaat.", correct: true },
+          { key: "c", text: "Zelf een nepaccount maken om terug te pakken.", correct: false },
+          { key: "d", text: "Het bericht in meerdere groepen delen.", correct: false }
+        ],
+        math: {
+          text: "Op maandag worden 12 nare berichten gemeld. Op dinsdag 9 en op woensdag nog 9. Hoeveel meldingen zijn dat samen?",
+          answer: 30
+        }
+      },
+      {
+        room: "Kamer 7 • AI-beelden",
+        icon: "🤖",
+        type: "Meerkeuze",
+        prompt: "Hoe kun je merken dat een beeld misschien met AI is gemaakt?",
+        answers: [
+          { key: "a", text: "Het staat op internet, dus het is echt.", correct: false },
+          { key: "b", text: "Het heeft veel kleuren, dus het is nep.", correct: false },
+          { key: "c", text: "Je let op rare details, vingers, tekst en controleert de bron.", correct: true },
+          { key: "d", text: "Je kijkt alleen of vrienden het geloven.", correct: false }
+        ],
+        math: {
+          text: "Een klas onderzoekt 6 AI-afbeeldingen. In elke afbeelding vinden zij 4 verdachte details. Hoeveel verdachte details vinden zij in totaal?",
+          answer: 24
+        }
+      },
+      {
+        room: "Kamer 8 • Privacy",
+        icon: "🕵️",
+        type: "Meerkeuze",
+        prompt: "Welke informatie deel je beter niet openbaar op sociale media?",
+        answers: [
+          { key: "a", text: "Je favoriete muziek.", correct: false },
+          { key: "b", text: "Je straat, telefoonnummer en wanneer je niet thuis bent.", correct: true },
+          { key: "c", text: "Dat je een hobby hebt.", correct: false },
+          { key: "d", text: "Dat je huiswerk hebt gemaakt.", correct: false }
+        ],
+        math: {
+          text: "Bij 8 online profielen staan per ongeluk 3 privégegevens zichtbaar. Hoeveel privégegevens staan er samen zichtbaar?",
+          answer: 24
+        }
+      },
+      {
+        room: "Kamer 9 • Veilige apps",
+        icon: "📲",
+        type: "Meerkeuze",
+        prompt: "Een app vraagt toegang tot je camera, contacten en locatie. Wat is slim?",
+        answers: [
+          { key: "a", text: "Alles toestaan. Anders werkt de app niet.", correct: false },
+          { key: "b", text: "Kijken wat echt nodig is en onnodige rechten uitzetten.", correct: true },
+          { key: "c", text: "Toegang geven en daarna vergeten.", correct: false },
+          { key: "d", text: "De app alleen ’s avonds gebruiken.", correct: false }
+        ],
+        math: {
+          text: "Op 5 telefoons staan 3 onnodige app-rechten aan. Hoeveel onnodige rechten moeten er samen uitgezet worden?",
+          answer: 15
+        }
+      },
+      {
+        room: "Kamer 10 • Sterke bron",
+        icon: "🔎",
+        type: "Meerkeuze",
+        prompt: "Welke bron is meestal het betrouwbaarst voor feiten?",
+        answers: [
+          { key: "a", text: "Een bericht zonder naam of datum.", correct: false },
+          { key: "b", text: "Een screenshot zonder bron.", correct: false },
+          { key: "c", text: "Een website met duidelijke afzender, datum en controleerbare informatie.", correct: true },
+          { key: "d", text: "Een reactie onder een video.", correct: false }
+        ],
+        math: {
+          text: "Een docent laat 12 online berichten zien. Van 8 berichten is de bron duidelijk en van de rest niet. Hoeveel berichten hebben géén duidelijke bron?",
+          answer: 4
+        }
+      },
+      {
+        room: "Kamer 11 • Phishing",
+        icon: "🎣",
+        type: "Meerkeuze",
+        prompt: "Wat is een phishing-bericht?",
+        answers: [
+          { key: "a", text: "Een bericht dat je probeert te laten klikken of gegevens te geven met een nepverhaal.", correct: true },
+          { key: "b", text: "Een bericht van een klasgenoot over huiswerk.", correct: false },
+          { key: "c", text: "Een automatische schoolmail met roosterwijziging.", correct: false },
+          { key: "d", text: "Een videobericht met muziek.", correct: false }
+        ],
+        math: {
+          text: "In een mailbox zitten 18 berichten. Daarvan zijn er 8 veilig. Hoeveel verdachte phishing-berichten blijven er over?",
+          answer: 10
+        }
+      },
+      {
+        room: "Kamer 12 • Deelgedrag",
+        icon: "📢",
+        type: "Meerkeuze",
+        prompt: "Waarom moet je voorzichtig zijn met snel delen?",
+        answers: [
+          { key: "a", text: "Omdat je telefoon dan sneller leeg raakt.", correct: false },
+          { key: "b", text: "Omdat een fout bericht zich heel snel kan verspreiden.", correct: true },
+          { key: "c", text: "Omdat het internet dan stopt.", correct: false },
+          { key: "d", text: "Omdat alleen docenten mogen delen.", correct: false }
+        ],
+        math: {
+          text: "Een fout bericht wordt eerst 4 keer gedeeld en daarna nog 8 keer. Hoeveel keer is het bericht dan in totaal gedeeld?",
+          answer: 12
+        }
+      },
+      {
+        room: "Kamer 13 • Lokatie delen",
+        icon: "📍",
+        type: "Meerkeuze",
+        prompt: "Waarom is live je locatie delen niet altijd slim?",
+        answers: [
+          { key: "a", text: "Omdat mensen dan precies kunnen zien waar je bent.", correct: true },
+          { key: "b", text: "Omdat foto’s dan altijd wazig worden.", correct: false },
+          { key: "c", text: "Omdat je telefoon dan geen muziek meer speelt.", correct: false },
+          { key: "d", text: "Omdat wifi dan uitgaat.", correct: false }
+        ],
+        math: {
+          text: "Een leerling deelt op 6 dagen telkens 5 uur zijn live-locatie. Hoeveel uur staat zijn locatie samen online?",
+          answer: 30
+        }
+      },
+      {
+        room: "Kamer 14 • Schermtijd en balans",
+        icon: "⏳",
+        type: "Meerkeuze",
+        prompt: "Wat helpt het meest om online in balans te blijven?",
+        answers: [
+          { key: "a", text: "De hele nacht online blijven zodat je niets mist.", correct: false },
+          { key: "b", text: "Meldingen slim uitzetten en pauzes nemen.", correct: true },
+          { key: "c", text: "Tijdens elk vak toch blijven scrollen.", correct: false },
+          { key: "d", text: "Je telefoon onder je kussen leggen.", correct: false }
+        ],
+        math: {
+          text: "Iemand zet zijn meldingen elke avond 25 minuten uit om rust te nemen. Dat doet hij 6 dagen. Hoeveel minuten rust heeft hij dan gepakt?",
+          answer: 150
+        }
+      },
+      {
+        room: "Kamer 15 • Meldknop",
+        icon: "🚨",
+        type: "Meerkeuze",
+        prompt: "Wat doe je bij een ernstig online probleem, zoals bedreiging of sexting zonder toestemming?",
+        answers: [
+          { key: "a", text: "Alles verwijderen en verder zwijgen.", correct: false },
+          { key: "b", text: "Bewijs bewaren en snel hulp vragen bij school, ouders of een vertrouwenspersoon.", correct: true },
+          { key: "c", text: "Wachten tot het vanzelf stopt.", correct: false },
+          { key: "d", text: "Een nepaccount maken voor onderzoek.", correct: false }
+        ],
+        math: {
+          text: "Er worden 3 screenshots van bewijs gemaakt en daarna nog 5 extra screenshots. Hoeveel screenshots van bewijs zijn er samen?",
+          answer: 8
+        }
+      },
+      {
+        room: "Kamer 16 • Wachtwoord delen",
+        icon: "🔑",
+        type: "Meerkeuze",
+        prompt: "Je vriend vraagt jouw inlog om ‘even iets te regelen’. Wat doe je?",
+        answers: [
+          { key: "a", text: "Geven, want vrienden vertrouw je altijd.", correct: false },
+          { key: "b", text: "Niet delen. Je account blijft jouw verantwoordelijkheid.", correct: true },
+          { key: "c", text: "Alleen het eerste deel van je wachtwoord sturen.", correct: false },
+          { key: "d", text: "Je wachtwoord op papier geven.", correct: false }
+        ],
+        math: {
+          text: "Een leerling moet voor 5 accounts een nieuw wachtwoord maken. Daarna zet hij bij 3 accounts ook nog tweestapsverificatie aan. Hoeveel beveiligingsacties doet hij samen?",
+          answer: 8
+        }
+      },
+      {
+        room: "Kamer 17 • Sterke reactie op druk",
+        icon: "💥",
+        type: "Meerkeuze",
+        prompt: "Iemand zet je onder druk om snel een foto te sturen. Wat is sterk gedrag?",
+        answers: [
+          { key: "a", text: "Toch sturen, anders word je uitgelachen.", correct: false },
+          { key: "b", text: "Nee zeggen, blokkeren als nodig en hulp vragen.", correct: true },
+          { key: "c", text: "Een foto van iemand anders sturen.", correct: false },
+          { key: "d", text: "Vragen of het geheim blijft.", correct: false }
+        ],
+        math: {
+          text: "Er zijn 4 momenten waarop iemand online onder druk wordt gezet. Daarna worden er nog 5 meldingen gedaan. Hoeveel momenten en meldingen zijn dat samen?",
+          answer: 9
+        }
+      },
+      {
+        room: "Kamer 18 • Reclame herkennen",
+        icon: "🛍️",
+        type: "Meerkeuze",
+        prompt: "Hoe herken je dat iets online reclame of beïnvloeding kan zijn?",
+        answers: [
+          { key: "a", text: "Er staat misschien #ad, #spon of iemand probeert je iets te laten kopen.", correct: true },
+          { key: "b", text: "Het is een video, dus het is geen reclame.", correct: false },
+          { key: "c", text: "Alle reclame is altijd verboden.", correct: false },
+          { key: "d", text: "Als vrienden het leuk vinden, is het geen reclame.", correct: false }
+        ],
+        math: {
+          text: "Een account plaatst 20 berichten. Daarvan zijn 4 gewone berichten en de rest is reclame. Hoeveel reclameberichten zijn dat?",
+          answer: 16
+        }
+      },
+      {
+        room: "Kamer 19 • Deepfake alarm",
+        icon: "🎭",
+        type: "Meerkeuze",
+        prompt: "Wat is een deepfake?",
+        answers: [
+          { key: "a", text: "Een gewone selfie met filter.", correct: false },
+          { key: "b", text: "Een bewerkt beeld of geluid dat echt lijkt, maar nep is gemaakt.", correct: true },
+          { key: "c", text: "Een videogesprek met slechte wifi.", correct: false },
+          { key: "d", text: "Een oude foto zonder kleur.", correct: false }
+        ],
+        math: {
+          text: "Een klas bekijkt 9 verdachte video’s. Daarna controleren zij nog 3 video’s extra. Hoeveel video’s worden er samen onderzocht?",
+          answer: 12
+        }
+      },
+      {
+        room: "Kamer 20 • Laatste deur",
+        icon: "🚪",
+        type: "Meerkeuze",
+        prompt: "Wat is het belangrijkste doel van mediawijsheid?",
+        answers: [
+          { key: "a", text: "Alles geloven wat er professioneel uitziet.", correct: false },
+          { key: "b", text: "Zo lang mogelijk online blijven.", correct: false },
+          { key: "c", text: "Slim, veilig en bewust omgaan met media en informatie.", correct: true },
+          { key: "d", text: "Nooit meer iets online doen.", correct: false }
+        ],
+        math: {
+          text: "Een leerling verdient 12 veiligheidspunten met goede keuzes. Daarna verdient hij er nog 8 bij. Hoeveel punten heeft hij samen?",
+          answer: 20
+        }
+      }
+    ];
+
+    const ROOM_DIGITS = [7, 3, 8, 5, 4];
+    const ROOM_DIGIT_INDEXES = [3, 7, 11, 15, 19]; // na kamer 4, 8, 12, 16, 20
+    const ROOM_STEPS = [
+      { name: "Start", icon: "🚪" },
+      { name: "Check", icon: "📰" },
+      { name: "Gedrag", icon: "💬" },
+      { name: "Slot", icon: "🔐" },
+      { name: "Delen", icon: "📸" },
+      { name: "Slim", icon: "🧠" },
+      { name: "AI", icon: "🤖" },
+      { name: "Privacy", icon: "🕵️" },
+      { name: "Apps", icon: "📲" },
+      { name: "Bron", icon: "🔎" },
+      { name: "Phishing", icon: "🎣" },
+      { name: "Deel", icon: "📢" },
+      { name: "Locatie", icon: "📍" },
+      { name: "Balans", icon: "⏳" },
+      { name: "Melden", icon: "🚨" },
+      { name: "Sleutel", icon: "🔑" },
+      { name: "Druk", icon: "💥" },
+      { name: "Reclame", icon: "🛍️" },
+      { name: "Deepfake", icon: "🎭" },
+      { name: "Finale", icon: "🏁" }
+    ];
+
+    const state = {
+      started: false,
+      playerName: "",
+      playerClass: "",
+      currentIndex: 0,
+      score: 0,
+      answered: 0,
+      phase: "idle", // idle, question, math, final, done
+      startTime: null,
+      timerInterval: null,
+      digits: [],
+      finalSeed: null,
+      finalAnswer: null,
+      finalCode: null,
+      correctAnswers: 0,
+      mathCorrect: 0
+    };
+
+    const els = {
+      playerName: document.getElementById('playerName'),
+      playerClass: document.getElementById('playerClass'),
+      startBtn: document.getElementById('startBtn'),
+      resetBtn: document.getElementById('resetBtn'),
+      roomStat: document.getElementById('roomStat'),
+      scoreStat: document.getElementById('scoreStat'),
+      timeStat: document.getElementById('timeStat'),
+      statusStat: document.getElementById('statusStat'),
+      roomIcon: document.getElementById('roomIcon'),
+      roomTitle: document.getElementById('roomTitle'),
+      roomIntro: document.getElementById('roomIntro'),
+      questionSection: document.getElementById('questionSection'),
+      questionType: document.getElementById('questionType'),
+      questionText: document.getElementById('questionText'),
+      answersBox: document.getElementById('answersBox'),
+      mathSection: document.getElementById('mathSection'),
+      mathText: document.getElementById('mathText'),
+      mathInput: document.getElementById('mathInput'),
+      checkMathBtn: document.getElementById('checkMathBtn'),
+      mathFeedback: document.getElementById('mathFeedback'),
+      progressBar: document.getElementById('progressBar'),
+      digitSlots: document.getElementById('digitSlots'),
+      roomMap: document.getElementById('roomMap'),
+      messageFeed: document.getElementById('messageFeed'),
+      celebrationModal: document.getElementById('celebrationModal'),
+      celebrationText: document.getElementById('celebrationText'),
+      celebrationDigit: document.getElementById('celebrationDigit'),
+      closeCelebrationBtn: document.getElementById('closeCelebrationBtn'),
+      finalSection: document.getElementById('finalSection'),
+      finalDigitsView: document.getElementById('finalDigitsView'),
+      formulaBox: document.getElementById('formulaBox'),
+      finalInput: document.getElementById('finalInput'),
+      checkFinalBtn: document.getElementById('checkFinalBtn'),
+      finalFeedback: document.getElementById('finalFeedback'),
+      codeRevealSection: document.getElementById('codeRevealSection'),
+      codeRevealBox: document.getElementById('codeRevealBox'),
+      certificateSection: document.getElementById('certificateSection'),
+      certName: document.getElementById('certName'),
+      certClass: document.getElementById('certClass'),
+      certScore: document.getElementById('certScore'),
+      certTime: document.getElementById('certTime'),
+      certCode: document.getElementById('certCode'),
+      certDate: document.getElementById('certDate'),
+      printCertBtn: document.getElementById('printCertBtn'),
+      playAgainBtn: document.getElementById('playAgainBtn'),
+      floatingIcons: document.getElementById('floatingIcons'),
+      confettiLayer: document.getElementById('confettiLayer'),
+      balloonLayer: document.getElementById('balloonLayer')
+    };
+
+    function initBackground() {
+      const emojis = ['📱','🔐','💬','🧠','🎉','🤖','📰','📸','🚨','🛡️','🧩','🔓','📢','🎈'];
+      for (let i = 0; i < 26; i++) {
+        const span = document.createElement('div');
+        span.className = 'icon-float';
+        span.textContent = emojis[i % emojis.length];
+        span.style.left = Math.random() * 100 + '%';
+        span.style.animationDuration = (18 + Math.random() * 20) + 's';
+        span.style.animationDelay = (-Math.random() * 20) + 's';
+        span.style.fontSize = (1.2 + Math.random() * 2.2) + 'rem';
+        els.floatingIcons.appendChild(span);
+      }
+    }
+
+    function renderRoomMap() {
+      els.roomMap.innerHTML = '';
+      ROOM_STEPS.forEach((room, i) => {
+        const div = document.createElement('div');
+        div.className = 'room-node';
+        if (state.started && i === state.currentIndex && state.phase !== 'final' && state.phase !== 'done') div.classList.add('active');
+        if (state.started && i < state.currentIndex) div.classList.add('done');
+        if (state.phase === 'final' && i === ROOM_STEPS.length - 1) div.classList.add('active');
+        if (state.phase === 'done') div.classList.add('done');
+        div.innerHTML = `<div style="font-size:1.5rem">${room.icon}</div><div>${room.name}</div>`;
+        els.roomMap.appendChild(div);
+      });
+    }
+
+    function renderDigits() {
+      els.digitSlots.innerHTML = '';
+      for (let i = 0; i < 5; i++) {
+        const div = document.createElement('div');
+        div.className = 'digit-slot' + (state.digits[i] !== undefined ? ' filled' : '');
+        div.textContent = state.digits[i] !== undefined ? state.digits[i] : '?';
+        els.digitSlots.appendChild(div);
+      }
+    }
+
+    function addFeed(message, kind = '') {
+      const div = document.createElement('div');
+      div.className = 'feed-item' + (kind ? ' ' + kind : '');
+      div.textContent = message;
+      els.messageFeed.prepend(div);
+      while (els.messageFeed.children.length > 6) {
+        els.messageFeed.removeChild(els.messageFeed.lastChild);
+      }
+    }
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function getElapsedSeconds() {
+      if (!state.startTime) return 0;
+      return Math.floor((Date.now() - state.startTime) / 1000);
+    }
+
+    function formatTime(totalSeconds) {
+      const min = Math.floor(totalSeconds / 60);
+      const sec = totalSeconds % 60;
+      return `${pad(min)}:${pad(sec)}`;
+    }
+
+    function updateTopbar() {
+      els.roomStat.textContent = state.started ? `${Math.min(state.currentIndex + (state.phase === 'question' || state.phase === 'math' ? 1 : 20), 20)} / 20` : '0 / 20';
+      els.scoreStat.textContent = state.score;
+      els.timeStat.textContent = formatTime(getElapsedSeconds());
+      const map = {
+        idle: 'Klaar voor start',
+        question: 'Beantwoord de vraag',
+        math: 'Open het rekenslot',
+        final: 'Maak de eindsom',
+        done: 'Kluis gekraakt'
+      };
+      els.statusStat.textContent = map[state.phase];
+      const completedUnits = state.currentIndex + (state.phase === 'final' || state.phase === 'done' ? 1 : 0);
+      const progress = Math.min((completedUnits / QUESTIONS.length) * 100, 100);
+      els.progressBar.style.width = progress + '%';
+    }
+
+    function startTimer() {
+      clearInterval(state.timerInterval);
+      state.timerInterval = setInterval(updateTopbar, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+    }
+
+    function resetGame() {
+      stopTimer();
+      state.started = false;
+      state.playerName = '';
+      state.playerClass = '';
+      state.currentIndex = 0;
+      state.score = 0;
+      state.answered = 0;
+      state.phase = 'idle';
+      state.startTime = null;
+      state.digits = [];
+      state.finalSeed = null;
+      state.finalAnswer = null;
+      state.finalCode = null;
+      state.correctAnswers = 0;
+      state.mathCorrect = 0;
+
+      els.playerName.value = '';
+      els.playerClass.value = '';
+      els.questionSection.classList.add('hidden');
+      els.mathSection.classList.add('hidden');
+      els.finalSection.classList.add('hidden');
+      els.codeRevealSection.classList.add('hidden');
+      els.certificateSection.classList.add('hidden');
+      els.roomIcon.textContent = '🚪';
+      els.roomTitle.textContent = 'Welkom in de escaperoom';
+      els.roomIntro.textContent = 'Vul je naam in en start. Daarna ga je kamer voor kamer verder.';
+      els.mathInput.value = '';
+      els.finalInput.value = '';
+      els.mathFeedback.innerHTML = '';
+      els.finalFeedback.innerHTML = '';
+      els.codeRevealBox.innerHTML = '';
+      els.messageFeed.innerHTML = '<div class="feed-item">Vul je naam in en start de escaperoom.</div>';
+      updateTopbar();
+      renderDigits();
+      renderRoomMap();
+    }
+
+    function startGame() {
+      const name = els.playerName.value.trim();
+      const playerClass = els.playerClass.value.trim();
+      if (!name) {
+        alert('Vul eerst je naam in.');
+        els.playerName.focus();
+        return;
+      }
+      state.started = true;
+      state.playerName = name;
+      state.playerClass = playerClass || 'Onbekende groep';
+      state.currentIndex = 0;
+      state.score = 0;
+      state.phase = 'question';
+      state.startTime = Date.now();
+      startTimer();
+      addFeed(`Speler ${state.playerName} is gestart. De eerste kamer gaat open.`, 'good');
+      renderQuestion();
+      updateTopbar();
+      renderRoomMap();
+    }
+
+    function renderQuestion() {
+      const q = QUESTIONS[state.currentIndex];
+      state.phase = 'question';
+      els.roomIcon.textContent = q.icon;
+      els.roomTitle.textContent = q.room;
+      els.roomIntro.textContent = 'Beantwoord eerst de mediawijsheid-vraag. Daarna volgt het rekenslot.';
+      els.questionSection.classList.remove('hidden');
+      els.mathSection.classList.add('hidden');
+      els.finalSection.classList.add('hidden');
+      els.questionType.textContent = q.type;
+      els.questionText.textContent = q.prompt;
+      els.answersBox.innerHTML = '';
+
+      q.answers.forEach(ans => {
+        const btn = document.createElement('button');
+        btn.className = 'answer-btn';
+        btn.innerHTML = `<strong style="display:inline-block; width: 28px; text-transform:uppercase;">${ans.key}.</strong> ${ans.text}`;
+        btn.addEventListener('click', () => checkAnswer(ans, btn));
+        els.answersBox.appendChild(btn);
+      });
+
+      updateTopbar();
+      renderRoomMap();
+    }
+
+    function disableAnswerButtons() {
+      [...els.answersBox.querySelectorAll('button')].forEach(btn => btn.disabled = true);
+    }
+
+    function checkAnswer(answer, btn) {
+      if (state.phase !== 'question') return;
+      disableAnswerButtons();
+      state.answered += 1;
+
+      const buttons = [...els.answersBox.querySelectorAll('button')];
+      const q = QUESTIONS[state.currentIndex];
+      const correctIndex = q.answers.findIndex(a => a.correct);
+      if (answer.correct) {
+        btn.classList.add('correct');
+        state.score += 5;
+        state.correctAnswers += 1;
+        addFeed(`Goed antwoord in ${q.room}. Rekenslot actief.`, 'good');
+        playSuccessTone();
+        setTimeout(() => renderMath(), 650);
+      } else {
+        btn.classList.add('wrong');
+        if (buttons[correctIndex]) buttons[correctIndex].classList.add('correct');
+        addFeed(`Niet goed. Het juiste antwoord is gemarkeerd. Probeer de kamer opnieuw.`, 'bad');
+        playErrorTone();
+        setTimeout(() => {
+          renderQuestion();
+        }, 1200);
+      }
+      updateTopbar();
+    }
+
+    function renderMath() {
+      const q = QUESTIONS[state.currentIndex];
+      state.phase = 'math';
+      els.mathInput.value = '';
+      els.mathFeedback.innerHTML = '';
+      els.questionSection.classList.add('hidden');
+      els.mathSection.classList.remove('hidden');
+      els.mathText.textContent = q.math.text;
+      els.mathInput.focus();
+      updateTopbar();
+    }
+
+    function checkMath() {
+      if (state.phase !== 'math') return;
+      const q = QUESTIONS[state.currentIndex];
+      const val = Number(els.mathInput.value);
+      if (Number.isNaN(val)) {
+        renderMiniFeedback(els.mathFeedback, 'Vul eerst een getal in.', 'bad');
+        return;
+      }
+      if (val === q.math.answer) {
+        state.score += 5;
+        state.mathCorrect += 1;
+        renderMiniFeedback(els.mathFeedback, 'Goed. Het slot springt open!', 'good');
+        playUnlockSequence();
+        handleRoomReward();
+      } else {
+        renderMiniFeedback(els.mathFeedback, 'Nog niet goed. Lees de som opnieuw en probeer het nog eens.', 'bad');
+        playErrorTone();
+      }
+      updateTopbar();
+    }
+
+    function renderMiniFeedback(box, text, kind) {
+      box.innerHTML = '';
+      const div = document.createElement('div');
+      div.className = 'feed-item ' + kind;
+      div.textContent = text;
+      box.appendChild(div);
+    }
+
+    function handleRoomReward() {
+      const digitUnlockPosition = ROOM_DIGIT_INDEXES.indexOf(state.currentIndex);
+      let earnedDigit = null;
+      if (digitUnlockPosition !== -1) {
+        earnedDigit = ROOM_DIGITS[digitUnlockPosition];
+        state.digits.push(earnedDigit);
+        renderDigits();
+      }
+
+      setTimeout(() => {
+        if (earnedDigit !== null) {
+          els.celebrationDigit.textContent = earnedDigit;
+          els.celebrationText.textContent = `Je hebt ${QUESTIONS[state.currentIndex].room} gehaald. Bewaar dit cijfer goed voor de eindsom.`;
+        } else {
+          els.celebrationDigit.textContent = '✓';
+          els.celebrationText.textContent = `Je bent door naar de volgende kamer. Nog even doorzetten.`;
+        }
+        launchConfetti(90);
+        launchBalloons(20);
+        els.celebrationModal.classList.add('show');
+      }, 700);
+    }
+
+    function continueAfterCelebration() {
+      els.celebrationModal.classList.remove('show');
+      state.currentIndex += 1;
+      if (state.currentIndex < QUESTIONS.length) {
+        renderQuestion();
+      } else {
+        renderFinalSection();
+      }
+      updateTopbar();
+      renderRoomMap();
+    }
+
+    function createFinalChallenge() {
+      const [a,b,c,d,e] = state.digits;
+      const seed = Math.floor((state.playerName.length * 7 + state.playerClass.length * 5 + getElapsedSeconds()) % 9) + 1;
+      state.finalSeed = seed;
+      state.finalAnswer = ((a * b) + (c * d) + e) * seed;
+      const rawCode = ((a * 10000) + (b * 1000) + (c * 100) + (d * 10) + e) + (seed * 37) + state.correctAnswers + state.mathCorrect + state.playerName.length;
+      state.finalCode = String(rawCode).padStart(6, '0').slice(-6);
+      return { a,b,c,d,e,seed };
+    }
+
+    function renderFinalSection() {
+      state.phase = 'final';
+      els.questionSection.classList.add('hidden');
+      els.mathSection.classList.add('hidden');
+      els.finalSection.classList.remove('hidden');
+      els.roomIcon.textContent = '🏁';
+      els.roomTitle.textContent = 'Finale • De hoofdkluis';
+      els.roomIntro.textContent = 'Gebruik de verzamelde cijfers in de juiste volgorde. Daarna verschijnt pas jouw persoonlijke code.';
+
+      const {a,b,c,d,e,seed} = createFinalChallenge();
+      els.finalDigitsView.innerHTML = '';
+      [a,b,c,d,e].forEach(n => {
+        const div = document.createElement('div');
+        div.className = 'code-chip';
+        div.textContent = n;
+        els.finalDigitsView.appendChild(div);
+      });
+
+      els.formulaBox.innerHTML = `
+        Neem de cijfers in deze volgorde: <strong>${a} - ${b} - ${c} - ${d} - ${e}</strong>.<br>
+        Maak dan deze som:<br>
+        <strong>((${a} × ${b}) + (${c} × ${d}) + ${e}) × ${seed}</strong><br>
+        Reken nauwkeurig. Pas bij een goed antwoord verschijnt jouw persoonlijke kluiscode.
+      `;
+      els.finalFeedback.innerHTML = '';
+      els.finalInput.value = '';
+      updateTopbar();
+      renderRoomMap();
+      addFeed('Alle kamers zijn gehaald. De eindsom wacht op je.', 'good');
+    }
+
+    function checkFinal() {
+      if (state.phase !== 'final') return;
+      const val = Number(els.finalInput.value);
+      if (Number.isNaN(val)) {
+        renderMiniFeedback(els.finalFeedback, 'Vul eerst een getal in.', 'bad');
+        return;
+      }
+      if (val === state.finalAnswer) {
+        renderMiniFeedback(els.finalFeedback, 'Perfect. De kluis opent nu.', 'good');
+        state.score += 10;
+        playGrandFinale();
+        showFinalCodeAndCertificate();
+      } else {
+        renderMiniFeedback(els.finalFeedback, 'Niet goed. Controleer de volgorde van de cijfers en reken opnieuw.', 'bad');
+        playErrorTone();
+      }
+      updateTopbar();
+    }
+
+    function showFinalCodeAndCertificate() {
+      state.phase = 'done';
+      els.codeRevealSection.classList.remove('hidden');
+      els.codeRevealBox.innerHTML = '';
+      state.finalCode.split('').forEach(ch => {
+        const div = document.createElement('div');
+        div.className = 'code-chip';
+        div.textContent = ch;
+        els.codeRevealBox.appendChild(div);
+      });
+
+      const totalTime = formatTime(getElapsedSeconds());
+      els.certName.textContent = state.playerName;
+      els.certClass.textContent = state.playerClass;
+      els.certScore.textContent = `${state.score} punten`;
+      els.certTime.textContent = totalTime;
+      els.certCode.textContent = state.finalCode;
+      els.certDate.textContent = new Date().toLocaleDateString('nl-NL');
+      els.certificateSection.classList.remove('hidden');
+      updateTopbar();
+      renderRoomMap();
+      addFeed(`Kluis gekraakt. Persoonlijke code: ${state.finalCode}`, 'good');
+      launchConfetti(180);
+      launchBalloons(40);
+    }
+
+    function launchConfetti(count = 80) {
+      const colors = ['#4ff4c8','#5aa8ff','#ffd75f','#ff6b81','#ffffff','#95ff7d'];
+      for (let i = 0; i < count; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetti';
+        c.style.left = Math.random() * 100 + '%';
+        c.style.top = '-10vh';
+        c.style.background = colors[Math.floor(Math.random() * colors.length)];
+        c.style.transform = `rotate(${Math.random() * 360}deg)`;
+        c.style.animation = `fall ${2.2 + Math.random() * 2.2}s linear forwards`;
+        c.style.animationDelay = (Math.random() * .35) + 's';
+        els.confettiLayer.appendChild(c);
+        setTimeout(() => c.remove(), 5200);
+      }
+    }
+
+    function launchBalloons(count = 12) {
+      const icons = ['🎈','🎉','🎊','✨'];
+      for (let i = 0; i < count; i++) {
+        const b = document.createElement('div');
+        b.className = 'balloon';
+        b.textContent = icons[Math.floor(Math.random() * icons.length)];
+        b.style.left = Math.random() * 100 + '%';
+        b.style.animationDuration = (5 + Math.random() * 5) + 's';
+        b.style.animationDelay = (Math.random() * .8) + 's';
+        els.balloonLayer.appendChild(b);
+        requestAnimationFrame(() => { b.style.opacity = '.95'; });
+        setTimeout(() => b.remove(), 9000);
+      }
+    }
+
+    let audioCtx;
+    function getAudioCtx() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      return audioCtx;
+    }
+
+    function beep(freq = 440, duration = 0.12, type = 'sine', volume = 0.03, delay = 0) {
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime + delay;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, now);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(volume, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + duration + 0.02);
+    }
+
+    function playSuccessTone() {
+      beep(660, .10, 'triangle', .03, 0);
+      beep(880, .12, 'triangle', .03, .09);
+    }
+
+    function playErrorTone() {
+      beep(240, .12, 'sawtooth', .035, 0);
+      beep(180, .16, 'sawtooth', .03, .10);
+    }
+
+    function playUnlockSequence() {
+      beep(523.25, .11, 'triangle', .03, 0);
+      beep(659.25, .11, 'triangle', .03, .08);
+      beep(783.99, .15, 'triangle', .03, .16);
+      beep(1046.5, .18, 'triangle', .035, .27);
+    }
+
+    function playGrandFinale() {
+      const notes = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5, 1318.51];
+      notes.forEach((n, i) => beep(n, .22, 'triangle', .035, i * .14));
+    }
+
+    els.startBtn.addEventListener('click', startGame);
+    els.resetBtn.addEventListener('click', resetGame);
+    els.checkMathBtn.addEventListener('click', checkMath);
+    els.closeCelebrationBtn.addEventListener('click', continueAfterCelebration);
+    els.checkFinalBtn.addEventListener('click', checkFinal);
+    els.printCertBtn.addEventListener('click', () => window.print());
+    els.playAgainBtn.addEventListener('click', resetGame);
+    els.mathInput.addEventListener('keydown', e => { if (e.key === 'Enter') checkMath(); });
+    els.finalInput.addEventListener('keydown', e => { if (e.key === 'Enter') checkFinal(); });
+
+    initBackground();
+    renderDigits();
+    renderRoomMap();
+    updateTopbar();
+  </script>
+</body>
+</html>
